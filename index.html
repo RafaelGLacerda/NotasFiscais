@@ -100,7 +100,8 @@
 
         input[type="text"],
         input[type="number"],
-        input[type="date"], /* Adicionado type="date" */
+        input[type="date"],
+        /* Adicionado type="date" */
         textarea {
             width: 100%;
             padding: 10px;
@@ -321,9 +322,11 @@
         }
     </style>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"
-        integrity="sha512-Z4E6uGf6FvD7x5x6y8w/p2w5Rz6+V+uV8b6V+v+w==" crossorigin="anonymous"
-        referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <script>const jsPDF = window.jspdf.jsPDF;</script>
+
 </head>
 
 <body>
@@ -345,7 +348,7 @@
                     <input type="text" id="tipo" placeholder="Ex: NOTA DE SERVIÇO, FATURA, ORÇAMENTO"
                         oninput="atualizarRelatorio()">
                 </div>
-                
+
                 <div class="campo">
                     <label for="numero">Nº Documento:</label>
                     <input type="text" id="numero" placeholder="Ex: 2025/0001, 11103942" oninput="atualizarRelatorio()">
@@ -504,6 +507,31 @@
             return `${day}/${month}/${year}`;
         }
 
+        function getDadosDocumento() {
+            const subtotal = itens.reduce((acc, item) => acc + (item.quantidade * item.valorUnitario), 0);
+            const impostoPercentual = parseFloat(document.getElementById('imposto-percentual').value || 0);
+            const valorImposto = subtotal * (impostoPercentual / 100);
+            const totalGeral = subtotal + valorImposto;
+
+            return {
+                tipo: document.getElementById('tipo').value || DADOS_GENERICOS.tipo.toUpperCase(),
+                numero: document.getElementById('numero').value || 'NÃO INFORMADO',
+                dataISO: document.getElementById('data').value,
+                dataDisplay: formatarDataBR(document.getElementById('data').value) || 'NÃO INFORMADA',
+                cliente: document.getElementById('cliente').value || 'NÃO INFORMADO',
+                enderecoCliente: document.getElementById('enderecoCliente').value || 'NÃO INFORMADO',
+                cpfCliente: document.getElementById('cpfCliente').value || 'NÃO INFORMADO',
+                emissor: document.getElementById('emissor').value || 'NÃO INFORMADO',
+                cnpjEmissor: document.getElementById('cnpjEmissor').value || 'NÃO INFORMADO',
+                impostoPercentual: impostoPercentual,
+                subtotal: subtotal,
+                valorImposto: valorImposto,
+                totalGeral: totalGeral,
+                dataAtual: new Date().toLocaleDateString('pt-BR')
+            };
+        }
+
+
         function renderizarListaItens() {
             const listaItensEl = document.getElementById('lista-itens');
             listaItensEl.innerHTML = '';
@@ -511,13 +539,13 @@
             itens.forEach(item => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
-					<td>${item.descricao}</td>
-					<td style="text-align: right;">${item.quantidade}</td>
-					<td style="text-align: right;">${formatarMoeda(item.valorUnitario)}</td>
-					<td style="text-align: center;">
-						<button type="button" class="btn-remover" onclick="removerItem(${item.id})">🗑️</button>
-					</td>
-				`;
+                    <td>${item.descricao}</td>
+                    <td style="text-align: right;">${item.quantidade}</td>
+                    <td style="text-align: right;">${formatarMoeda(item.valorUnitario)}</td>
+                    <td style="text-align: center;">
+                        <button type="button" class="btn-remover" onclick="removerItem(${item.id})">🗑️</button>
+                    </td>
+                `;
                 listaItensEl.appendChild(row);
             });
 
@@ -554,93 +582,66 @@
         }
 
         function atualizarRelatorio() {
-            // Pega os valores dos inputs (mesmo se vazios)
-            const tipo = document.getElementById('tipo').value;
-            const numero = document.getElementById('numero').value;
-            const dataISO = document.getElementById('data').value; // Novo
-            const cliente = document.getElementById('cliente').value;
-            const enderecoCliente = document.getElementById('enderecoCliente').value; // Novo
-            const cpfCliente = document.getElementById('cpfCliente').value; // Novo
-            const emissor = document.getElementById('emissor').value;
-            const cnpjEmissor = document.getElementById('cnpjEmissor').value; // Novo
-            const impostoPercentual = parseFloat(document.getElementById('imposto-percentual').value || 0);
-
+            const dados = getDadosDocumento();
             let itensHTML = '';
-            let subtotal = 0;
 
             itens.forEach(item => {
                 const totalItem = item.quantidade * item.valorUnitario;
-                subtotal += totalItem;
-
                 itensHTML += `
-					<tr>
-						<td style="color:#333; padding: 8px; border: 1px solid #ddd;">${item.descricao}</td>
-						<td style="color:#333; text-align: right; padding: 8px; border: 1px solid #ddd;">${item.quantidade}</td>
-						<td style="text-align: right; color:#333; padding: 8px; border: 1px solid #ddd;">${formatarMoeda(item.valorUnitario)}</td>
-						<td style="text-align: right; color:#333; padding: 8px; border: 1px solid #ddd;">${formatarMoeda(totalItem)}</td>
-					</tr>
-				`;
+                    <tr>
+                        <td style="color:#333; padding: 8px; border: 1px solid #ddd;">${item.descricao}</td>
+                        <td style="color:#333; text-align: right; padding: 8px; border: 1px solid #ddd;">${item.quantidade}</td>
+                        <td style="text-align: right; color:#333; padding: 8px; border: 1px solid #ddd;">${formatarMoeda(item.valorUnitario)}</td>
+                        <td style="text-align: right; color:#333; padding: 8px; border: 1px solid #ddd;">${formatarMoeda(totalItem)}</td>
+                    </tr>
+                `;
             });
 
-            const valorImposto = subtotal * (impostoPercentual / 100);
-            const totalGeral = subtotal + valorImposto;
-
-            // Variáveis de Display com Fallback (melhora o visual da preview)
-            const tipoDisplay = tipo || DADOS_GENERICOS.tipo.toUpperCase();
-            const numeroDisplay = numero || 'NÃO INFORMADO';
-            const dataDisplay = formatarDataBR(dataISO) || 'NÃO INFORMADA'; // Novo
-            const clienteDisplay = cliente || 'NÃO INFORMADO';
-            const enderecoClienteDisplay = enderecoCliente || 'NÃO INFORMADO'; // Novo
-            const cpfClienteDisplay = cpfCliente || 'NÃO INFORMADO'; // Novo
-            const emissorDisplay = emissor || 'NÃO INFORMADO';
-            const cnpjEmissorDisplay = cnpjEmissor || 'NÃO INFORMADO'; // Novo
-            const dataAtual = new Date().toLocaleDateString('pt-BR'); // Para rodapé
-
             const relatorioHTML = `
-				<div class="cabecalho-relatorio" style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom: 2px solid #ddd; padding-bottom: 15px;">
-					<h3 style="color:#1e88e5; font-size: 1.5em; margin: 0;">${tipoDisplay}</h3>
-					<div style="text-align: right;">
-						<p style="color:#555; margin: 3px 0;">Nº: <strong>${numeroDisplay}</strong></p>
-						<p style="color:#555; margin: 3px 0;">Data: <strong>${dataDisplay}</strong></p> </div>
-				</div>
+                <div class="cabecalho-relatorio" style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom: 2px solid #ddd; padding-bottom: 15px;">
+                    <h3 style="color:#1e88e5; font-size: 1.5em; margin: 0;">${dados.tipo}</h3>
+                    <div style="text-align: right;">
+                        <p style="color:#555; margin: 3px 0;">Nº: <strong>${dados.numero}</strong></p>
+                        <p style="color:#555; margin: 3px 0;">Data: <strong>${dados.dataDisplay}</strong></p> </div>
+                </div>
 
-				<div class="secao dados-emissor" style="margin-top: 20px; border-bottom: 1px dashed #ccc; padding-bottom: 10px;">
-					<h4 style="color:#555; font-size: 1em; margin: 0 0 5px 0;">Emissor</h4>
-					<p style="color:#333; margin: 3px 0;"><strong>${emissorDisplay}</strong></p>
-					<p style="color:#555; margin: 3px 0;">CNPJ: ${cnpjEmissorDisplay}</p> </div>
+                <div class="secao dados-emissor" style="margin-top: 20px; border-bottom: 1px dashed #ccc; padding-bottom: 10px;">
+                    <h4 style="color:#555; font-size: 1em; margin: 0 0 5px 0;">Emissor</h4>
+                    <p style="color:#333; margin: 3px 0;"><strong>${dados.emissor}</strong></p>
+                    <p style="color:#555; margin: 3px 0;">CNPJ: ${dados.cnpjEmissor}</p> </div>
 
-				<div class="secao dados-cliente" style="margin-top: 20px; border-bottom: 1px dashed #ccc; padding-bottom: 10px;">
-					<h4 style="color:#555; font-size: 1em; margin: 0 0 5px 0;">Cliente</h4>
-					<p style="color:#333; margin: 3px 0;"><strong>${clienteDisplay}</strong></p>
-					<p style="color:#555; margin: 3px 0;">Endereço: ${enderecoClienteDisplay}</p> <p style="color:#555; margin: 3px 0;">CPF/CNPJ: ${cpfClienteDisplay}</p> </div>
+                <div class="secao dados-cliente" style="margin-top: 20px; border-bottom: 1px dashed #ccc; padding-bottom: 10px;">
+                    <h4 style="color:#555; font-size: 1em; margin: 0 0 5px 0;">Cliente</h4>
+                    <p style="color:#333; margin: 3px 0;"><strong>${dados.cliente}</strong></p>
+                    <p style="color:#555; margin: 3px 0;">Endereço: ${dados.enderecoCliente}</p> <p style="color:#555; margin: 3px 0;">CPF/CNPJ: ${dados.cpfCliente}</p> </div>
 
-				<div class="secao detalhes-itens-pdf" style="margin-top: 20px;">
-					<h4 style="color:#555; font-size: 1em; margin: 0 0 10px 0;">Detalhes dos Itens/Serviços</h4>
-					<table style="width: 100%; border-collapse: collapse;">
-						<thead>
-							<tr style="background-color: #e3f2fd;">
-								<th style="color:#333; padding: 8px; border: 1px solid #ddd;">Descrição</th>
-								<th style="color:#333; padding: 8px; border: 1px solid #ddd; text-align: right;">Qtd</th>
-								<th style="text-align: right; color:#333; padding: 8px; border: 1px solid #ddd;">Valor Unit.</th>
-								<th style="text-align: right; color:#333; padding: 8px; border: 1px solid #ddd;">Total</th>
-							</tr>
-						</thead>
-						<tbody>
-							${itens.length > 0 ? itensHTML : '<tr><td colspan="4" style="text-align: center; color: #777;">Nenhum item adicionado.</td></tr>'}
-						</tbody>
-					</table>
-				</div>
+                <div class="secao detalhes-itens-pdf" style="margin-top: 20px;">
+                    <h4 style="color:#555; font-size: 1em; margin: 0 0 10px 0;">Detalhes dos Itens/Serviços</h4>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background-color: #e3f2fd;">
+                                <th style="color:#333; padding: 8px; border: 1px solid #ddd;">Descrição</th>
+                                <th style="color:#333; padding: 8px; border: 1px solid #ddd; text-align: right;">Qtd</th>
+                                <th style="text-align: right; color:#333; padding: 8px; border: 1px solid #ddd;">Valor Unit.</th>
+                                <th style="text-align: right; color:#333; padding: 8px; border: 1px solid #ddd;">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${itens.length > 0 ? itensHTML : '<tr><td colspan="4" style="text-align: center; color: #777;">Nenhum item adicionado.</td></tr>'}
+                        </tbody>
+                    </table>
+                </div>
 
-				<div class="detalhes-totais" style="margin-top: 20px; text-align: right; color:#333;">
-					<p style="margin: 5px 0;">Subtotal: ${formatarMoeda(subtotal)}</p>
-					<p style="margin: 5px 0;">Imposto (${impostoPercentual}%): ${formatarMoeda(valorImposto)}</p>
-					<p class="total-final" style="font-size: 1.2em; color: #1e88e5; font-weight: bold; margin: 10px 0;">Total Geral: ${formatarMoeda(totalGeral)}</p>
-				</div>
+                <div class="detalhes-totais" style="margin-top: 20px; text-align: right; color:#333;">
+                    <p style="margin: 5px 0;">Subtotal: ${formatarMoeda(dados.subtotal)}</p>
+                    <p style="margin: 5px 0;">Imposto (${dados.impostoPercentual}%): ${formatarMoeda(dados.valorImposto)}</p>
+                    <p class="total-final" style="font-size: 1.2em; color: #1e88e5; font-weight: bold; margin: 10px 0;">Total Geral: ${formatarMoeda(dados.totalGeral)}</p>
+                </div>
 
-				<div class="rodape-relatorio" style="margin-top: 40px; padding-top: 10px; border-top: 1px dashed #ccc; font-size: 0.8em; text-align: center; color: #777;">
-					<p>Documento gerado em ${dataAtual}. Ferramenta de demonstração.</p>
-				</div>
-			`;
+                <div class="rodape-relatorio" style="margin-top: 40px; padding-top: 10px; border-top: 1px dashed #ccc; font-size: 0.8em; text-align: center; color: #777;">
+                    <p>Documento gerado em ${dados.dataAtual}. Ferramenta de demonstração.</p>
+                </div>
+            `;
 
             document.getElementById('relatorio-pdf').innerHTML = relatorioHTML;
             salvarDados();
@@ -706,14 +707,14 @@
 
             document.getElementById('btn-confirmar').onclick = () => {
                 document.getElementById('formulario-nota').reset();
-                itens = []; proximoId = 1; 
-                
+                itens = []; proximoId = 1;
+
                 // Limpa os novos campos do form e do estado
                 document.getElementById('data').value = "";
                 document.getElementById('enderecoCliente').value = "";
                 document.getElementById('cpfCliente').value = "";
                 document.getElementById('cnpjEmissor').value = "";
-                
+
                 renderizarListaItens();
                 mostrarMensagem("Todos os dados foram limpos.", "info", 3000);
                 confirmBox.style.display = 'none';
@@ -727,40 +728,174 @@
 
         // Função placeholder para 'mostrarMensagem' (não estava definida)
         function mostrarMensagem(texto, tipo, tempo) {
-             console.log(`[${tipo.toUpperCase()}]: ${texto}`);
+            console.log(`[${tipo.toUpperCase()}]: ${texto}`);
         }
 
 
         /**
-         * FUNÇÃO GERAR PDF (CORRIGIDA COM TRY/CATCH)
+         * 💡 NOVA FUNÇÃO GERAR PDF (Usando jsPDF puro e autotable)
+         * Esta função constrói o PDF item por item, o que IGNORA as restrições de segurança do file://.
+         * Deve funcionar em todos os navegadores, localmente.
          */
         function gerarPDF() {
-            const elemento = document.getElementById('relatorio-pdf');
+            const dados = getDadosDocumento();
 
-            const opcoes = {
-                margin: 15,
-                filename: `Documento_${document.getElementById('numero').value || 'Gerado'}.pdf`,
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, logging: false, dpi: 192, letterRendering: true },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
+            // Configurações do documento PDF
+            const doc = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4'
+            });
 
-            try {
-                // Tenta gerar e baixar o PDF
-                html2pdf().from(elemento).set(opcoes).save();
-            } catch (error) {
-                // Se falhar, exibe uma mensagem de erro útil.
-                console.error("ERRO AO GERAR PDF:", error);
+            const pageW = doc.internal.pageSize.getWidth();
+            let currentY = 15; // Posição Y inicial
+            const margin = 15;
+            const padding = 5;
 
-                let mensagemErro = "Ocorreu um erro ao gerar o PDF. A causa mais provável é que o navegador (Chrome/Edge) bloqueou o script por segurança ao rodar o arquivo localmente.";
-                mensagemErro += "\n\nTente as seguintes soluções:";
-                mensagemErro += "\n1. Limpe o cache do seu navegador e tente novamente.";
-                mensagemErro += "\n2. Use um navegador diferente (ex: Firefox) ou use um servidor local simples (ex: Live Server do VS Code).";
-                mensagemErro += "\n\nO erro detalhado foi logged no console (F12).";
+            // 1. CABEÇALHO DO DOCUMENTO
+            doc.setFontSize(18);
+            doc.setTextColor('#1e88e5');
+            doc.text(dados.tipo, margin, currentY);
 
-                alert(mensagemErro);
+            doc.setFontSize(10);
+            doc.setTextColor('#555');
+            doc.text(`Nº: ${dados.numero}`, pageW - margin, currentY, { align: 'right' });
+            currentY += 5;
+            doc.text(`Data: ${dados.dataDisplay}`, pageW - margin, currentY, { align: 'right' });
+            currentY += 10;
+
+            // Linha separadora
+            doc.setDrawColor(220, 220, 220);
+            doc.line(margin, currentY, pageW - margin, currentY);
+            currentY += 5;
+
+            // 2. DADOS DO EMISSOR
+            doc.setFontSize(12);
+            doc.setTextColor('#555');
+            doc.text('Emissor', margin, currentY);
+            currentY += 5;
+            doc.setFontSize(10);
+            doc.setTextColor('#333');
+            doc.text(dados.emissor, margin, currentY);
+            currentY += 5;
+            doc.setTextColor('#555');
+            doc.text(`CNPJ: ${dados.cnpjEmissor}`, margin, currentY);
+            currentY += 10;
+            doc.line(margin, currentY, pageW - margin, currentY);
+            currentY += 5;
+
+            // 3. DADOS DO CLIENTE
+            doc.setFontSize(12);
+            doc.setTextColor('#555');
+            doc.text('Cliente', margin, currentY);
+            currentY += 5;
+            doc.setFontSize(10);
+            doc.setTextColor('#333');
+            doc.text(dados.cliente, margin, currentY);
+            currentY += 5;
+            doc.setTextColor('#555');
+            doc.text(`Endereço: ${dados.enderecoCliente}`, margin, currentY);
+            currentY += 5;
+            doc.text(`CPF/CNPJ: ${dados.cpfCliente}`, margin, currentY);
+            currentY += 10;
+            doc.line(margin, currentY, pageW - margin, currentY);
+            currentY += 5;
+
+            // 4. TABELA DE ITENS (usando autotable)
+            doc.setFontSize(12);
+            doc.setTextColor('#555');
+            doc.text('Detalhes dos Itens/Serviços', margin, currentY);
+            currentY += 5;
+
+            // Preparar dados para a tabela
+            const head = [['Descrição', 'Qtd', 'V. Unitário', 'Total']];
+            const body = itens.map(item => [
+                item.descricao,
+                item.quantidade,
+                formatarMoeda(item.valorUnitario),
+                formatarMoeda(item.quantidade * item.valorUnitario)
+            ]);
+
+            if (itens.length === 0) {
+                body.push([{
+                    content: 'Nenhum item adicionado.',
+                    colSpan: 4,
+                    styles: {
+                        halign: 'center',
+                        fontStyle: 'italic',
+                        textColor: [119, 119, 119]
+                    }
+                }]);
             }
+
+            doc.autoTable({
+                startY: currentY,
+                head: head,
+                body: body,
+                theme: 'striped',
+                styles: {
+                    fontSize: 10,
+                    cellPadding: padding / 2,
+                    overflow: 'linebreak',
+                    textColor: [51, 51, 51]
+                },
+                headStyles: {
+                    fillColor: [227, 242, 253], // #e3f2fd (cor do seu cabeçalho)
+                    textColor: [51, 51, 51],
+                    fontStyle: 'bold',
+                    halign: 'center'
+                },
+                columnStyles: {
+                    // Alinhamento das colunas de valor à direita
+                    1: {
+                        halign: 'right'
+                    },
+                    2: {
+                        halign: 'right'
+                    },
+                    3: {
+                        halign: 'right'
+                    }
+                },
+                didDrawPage: (data) => {
+                    // Atualiza a posição Y após a tabela
+                    currentY = data.cursor.y + 10;
+                }
+            });
+
+            // 5. DETALHES DOS TOTAIS
+
+            currentY += 5;
+            const xAlign = pageW - margin;
+
+            // Subtotal
+            doc.setFontSize(10);
+            doc.setTextColor('#333');
+            doc.text(`Subtotal: ${formatarMoeda(dados.subtotal)}`, xAlign, currentY, { align: 'right' });
+            currentY += 5;
+
+            // Imposto
+            doc.text(`Imposto (${dados.impostoPercentual}%): ${formatarMoeda(dados.valorImposto)}`, xAlign, currentY, { align: 'right' });
+            currentY += 8;
+
+            // Total Geral
+            doc.setFontSize(12);
+            doc.setTextColor('#1e88e5');
+            doc.text(`Total Geral: ${formatarMoeda(dados.totalGeral)}`, xAlign, currentY, { align: 'right' });
+            currentY += 10;
+
+
+            // 6. RODAPÉ
+            doc.setDrawColor(204, 204, 204);
+            doc.line(margin, doc.internal.pageSize.getHeight() - 15, pageW - margin, doc.internal.pageSize.getHeight() - 15);
+            doc.setFontSize(8);
+            doc.setTextColor('#777');
+            doc.text(`Documento gerado em ${dados.dataAtual}. Ferramenta de demonstração.`, pageW / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
+
+            // Salva o PDF
+            doc.save(`${dados.tipo.replace(/\s/g, '_')}_${dados.numero}.pdf`);
         }
+
 
         // Inicializa a aplicação ao carregar a página (carrega dados e tema)
         document.addEventListener('DOMContentLoaded', carregarDados);
