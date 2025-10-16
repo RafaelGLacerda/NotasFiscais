@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" href="logo2.png" type="image/png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Notas Fiscais</title>
+
+    <style>
+        /* Variáveis CSS (LIGHT MODE - PADRÃO) */
+        :root {
+            --cor-principal: #1e88e5;
+            /* Azul vibrante */
+            --cor-secundaria: #4caf50;
+            /* Verde para sucesso */
+            --cor-fundo: #f0f4f8;
+            --cor-card: #ffffff;
+            --cor-texto: #333333;
+            --cor-texto-claro: #555555;
+            --cor-borda: #c0c0c0;
+            --cor-cabecalho-tabela: #e3f2fd;
+            --sombra-card: 0 6px 15px rgba(0, 0, 0, 0.1);
+            --borda-raio: 10px;
+        }
+
+        /* DARK MODE - Sobrescreve as variáveis */
+        body.dark-mode {
+            --cor-principal: #64b5f6;
+            --cor-secundaria: #81c784;
+            --cor-fundo: #1e1e1e;
+            --cor-card: #2c2c2c;
+            --cor-texto: #e0e0e0;
+            --cor-texto-claro: #aaaaaa;
+            --cor-borda: #444444;
+            --cor-cabecalho-tabela: #3a3a3a;
+            --sombra-card: 0 6px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        /* ESTILOS GERAIS */
+        body {
+            font-family: 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--cor-fundo);
+            color: var(--cor-texto);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1100px;
+            display: flex;
+            gap: 25px;
+            flex-wrap: wrap;
+        }
+
+        .painel,
+        .pre-visualizacao {
+            background-color: var(--cor-card);
+            padding: 30px;
+            border-radius: var(--borda-raio);
+            box-shadow: var(--sombra-card);
+            flex: 1 1 500px;
+            min-width: 300px;
+            transition: background-color 0.3s, box-shadow 0.3s;
+        }
+
+        h1,
+        h2 {
+            color: var(--cor-principal);
+            border-bottom: 3px solid var(--cor-principal);
+            padding-bottom: 10px;
+            margin-bottom: 25px;
+            font-weight: 400;
+            font-size: 1.5em;
+        }
+
+        .painel h2 {
+            font-size: 1.3em;
+            margin-top: 40px;
+        }
+
+        /* Formulário e Inputs */
+        .campo {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            font-size: 0.95em;
+            color: var(--cor-texto-claro);
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="date"], /* Adicionado type="date" */
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--cor-borda);
+            border-radius: 5px;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+            font-size: 1em;
+            background-color: var(--cor-card);
+            color: var(--cor-texto);
+        }
+
+        input:focus,
+        textarea:focus {
+            border-color: var(--cor-principal);
+            box-shadow: 0 0 0 1px var(--cor-principal);
+            outline: none;
+        }
+
+        /* Botões de Ação */
+        .botoes-acao {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 700;
+            transition: background-color 0.3s, opacity 0.3s;
+        }
+
+        .btn-principal {
+            background-color: var(--cor-principal);
+            color: white;
+            flex-grow: 1;
+        }
+
+        .btn-secundario {
+            background-color: #9e9e9e;
+            color: white;
+        }
+
+        .btn-principal:hover,
+        .btn-secundario:hover {
+            opacity: 0.9;
+        }
+
+        /* Tabela Dinâmica de Itens */
+        .tabela-itens {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 0.95em;
+        }
+
+        .tabela-itens thead th {
+            padding: 10px;
+            background-color: var(--cor-cabecalho-tabela);
+            border: 1px solid var(--cor-borda);
+            color: var(--cor-texto);
+            font-weight: 600;
+        }
+
+        body.dark-mode .tabela-itens thead th {
+            color: var(--cor-texto);
+        }
+
+        #lista-itens tr {
+            background-color: var(--cor-card);
+        }
+
+        #lista-itens td {
+            padding: 10px;
+            border: 1px solid var(--cor-borda);
+            color: var(--cor-texto);
+            vertical-align: middle;
+        }
+
+        .btn-remover {
+            background: none;
+            border: none;
+            color: #f44336;
+            cursor: pointer;
+            padding: 0;
+            font-size: 1.2em;
+            opacity: 0.8;
+        }
+
+        .btn-remover:hover {
+            opacity: 1;
+        }
+
+        .btn-adicionar {
+            background-color: var(--cor-principal);
+            color: white;
+            padding: 10px 20px;
+            font-weight: 500;
+        }
+
+        /* Layout de Adição de Item */
+        .input-novo-item {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 15px;
+            margin-bottom: 25px;
+        }
+
+        .input-novo-item input[type="text"] {
+            flex-grow: 1;
+        }
+
+        .input-novo-item input[type="number"] {
+            width: 100px;
+            text-align: right;
+        }
+
+        .input-novo-item .valor-unitario {
+            width: 120px;
+            text-align: right;
+        }
+
+        /* PRÉ-VISUALIZAÇÃO DO PDF (Manter visual LIGHT para o PDF final) */
+        #relatorio-pdf {
+            padding: 25px;
+            margin-top: 10px;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+            color: #333;
+        }
+
+        /* Garantindo que os estilos internos do PDF sejam Light Mode */
+        #relatorio-pdf * {
+            color: #333 !important;
+            border-color: #ddd !important;
+        }
+
+        #relatorio-pdf .cabecalho-relatorio h3 {
+            color: #1e88e5 !important;
+        }
+
+        #relatorio-pdf .secao h4 {
+            color: #555 !important;
+            border-left-color: #4caf50 !important;
+        }
+
+        #relatorio-pdf .detalhes-itens-pdf th {
+            background-color: #e3f2fd !important;
+        }
+
+        #relatorio-pdf .total-final {
+            color: #1e88e5 !important;
+        }
+
+        /* Toggle de Tema */
+        .theme-toggle-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+
+        .theme-toggle {
+            background: #9e9e9e;
+            color: white;
+            padding: 8px 12px;
+            font-weight: 500;
+            font-size: 0.9em;
+        }
+
+        .theme-toggle:hover {
+            background: #757575;
+        }
+
+        /* Responsividade */
+        @media (max-width: 1100px) {
+            .container {
+                flex-direction: column;
+            }
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+
+            .painel,
+            .pre-visualizacao {
+                padding: 20px;
+            }
+
+            .botoes-acao {
+                flex-direction: column;
+            }
+
+            .theme-toggle-container {
+                top: 10px;
+                right: 10px;
+            }
+
+            .input-novo-item {
+                flex-direction: column;
+            }
+
+            .input-novo-item input[type="number"],
+            .input-novo-item .valor-unitario {
+                width: 100%;
+                text-align: left;
+            }
+
+            .btn-adicionar {
+                width: 100%;
+            }
+        }
+    </style>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"
+        integrity="sha512-Z4E6uGf6FvD7x5x6y8w/p2w5Rz6+V+uV8b6V+v+w==" crossorigin="anonymous"
+        referrerpolicy="no-referrer"></script>
+</head>
+
+<body>
+
+    <div class="theme-toggle-container">
+        <button class="theme-toggle" onclick="toggleTheme()" id="theme-button">
+            Mudar para Dark Mode
+        </button>
+    </div>
+
+    <div class="container">
+
+        <div class="painel">
+            <h1>Configuração do Documento</h1>
+
+            <form id="formulario-nota">
+                <div class="campo">
+                    <label for="tipo">Tipo de Documento:</label>
+                    <input type="text" id="tipo" placeholder="Ex: NOTA DE SERVIÇO, FATURA, ORÇAMENTO"
+                        oninput="atualizarRelatorio()">
+                </div>
+                
+                <div class="campo">
+                    <label for="numero">Nº Documento:</label>
+                    <input type="text" id="numero" placeholder="Ex: 2025/0001, 11103942" oninput="atualizarRelatorio()">
+                </div>
+
+                <div class="campo">
+                    <label for="data">Data de Emissão:</label>
+                    <input type="date" id="data" onchange="atualizarRelatorio()">
+                </div>
+                <div class="campo">
+                    <label for="cliente">Nome do Cliente:</label>
+                    <input type="text" id="cliente" placeholder="Ex: Cliente Padrão S.A."
+                        oninput="atualizarRelatorio()">
+                </div>
+
+                <div class="campo">
+                    <label for="enderecoCliente">Endereço do Cliente:</label>
+                    <input type="text" id="enderecoCliente" placeholder="Ex: Av. Principal, 123, Centro"
+                        oninput="atualizarRelatorio()">
+                </div>
+                <div class="campo">
+                    <label for="cpfCliente">CPF/CNPJ do Cliente (Opcional):</label>
+                    <input type="text" id="cpfCliente" placeholder="Ex: 000.000.000-00 ou 00.000.000/0001-00"
+                        oninput="atualizarRelatorio()">
+                </div>
+                <div class="campo">
+                    <label for="emissor">Nome do Emissor:</label>
+                    <input type="text" id="emissor" placeholder="Ex: Sua Empresa LTDA" oninput="atualizarRelatorio()">
+                </div>
+
+                <div class="campo">
+                    <label for="cnpjEmissor">CNPJ do Emissor:</label>
+                    <input type="text" id="cnpjEmissor" placeholder="Ex: 00.000.000/0001-00" oninput="atualizarRelatorio()">
+                </div>
+                <h2>Itens do Documento</h2>
+                <div id="div-itens">
+                    <table class="tabela-itens">
+                        <thead>
+                            <tr>
+                                <th>Descrição</th>
+                                <th style="width: 15%;">Qtd</th>
+                                <th style="width: 20%;">V. Unitário</th>
+                                <th style="width: 10%;">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lista-itens">
+                        </tbody>
+                    </table>
+                </div>
+                <div id="confirmacao-dinamica"
+                    style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background-color:var(--cor-card); padding:20px; box-shadow:var(--sombra-card); border-radius:10px; z-index:1000;">
+                    <p id="texto-confirmacao">Deseja realmente limpar todos os dados?</p>
+                    <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:15px;">
+                        <button id="btn-confirmar" class="btn-principal">Sim</button>
+                        <button id="btn-cancelar" class="btn-secundario">Não</button>
+                    </div>
+                </div>
+                <div class="input-novo-item">
+                    <input type="text" id="novo-descricao" placeholder="Descrição do Item/Serviço">
+                    <input type="number" id="novo-qtd" value="1" min="1">
+                    <input type="number" id="novo-valor" value="0.00" min="0" step="0.01" class="valor-unitario">
+                    <button type="button" class="btn-adicionar" onclick="adicionarItem()">Adicionar Item</button>
+                </div>
+
+
+                <div class="campo">
+                    <label for="imposto-percentual">Imposto (%) - Ex: 10 para 10%</label>
+                    <input type="number" id="imposto-percentual" placeholder="Valor em %" min="0" step="0.01"
+                        oninput="atualizarRelatorio()">
+                </div>
+
+                <div class="botoes-acao">
+                    <button type="button" class="btn-principal" onclick="gerarPDF()">
+                        Gerar e Baixar PDF
+                    </button>
+                    <button type="button" class="btn-secundario" onclick="limparTudo()">
+                        Limpar Tudo
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="pre-visualizacao">
+            <h2>Pré-visualização do Documento</h2>
+
+            <div id="relatorio-pdf">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Array global para armazenar os itens
+        let itens = []; // Inicia vazio
+        let proximoId = 1;
+
+        // Chaves para armazenamento local
+        const STORAGE_KEY = 'pdfGeneratorDataV2';
+        const THEME_KEY = 'themePreferenceV2';
+
+        // Dados genéricos para inicialização (somente se não houver dados salvos)
+        const DADOS_GENERICOS = {
+            tipo: "NOTA DE SERVIÇO",
+            numero: "2025/0001",
+            data: new Date().toISOString().substring(0, 10), // Data de hoje em formato YYYY-MM-DD
+            cliente: "Cliente Padrão S.A.",
+            enderecoCliente: "Av. Principal, 123, Centro",
+            cpfCliente: "000.000.000-00",
+            emissor: "Sua Empresa LTDA",
+            cnpjEmissor: "00.000.000/0001-00",
+            imposto: "10",
+            itens: [],
+            proximoId: 1
+        };
+
+
+        // --- Funções de Tema (Dark/Light Mode) ---
+
+        function aplicarTema(tema) {
+            const body = document.body;
+            const button = document.getElementById('theme-button');
+
+            if (tema === 'dark') {
+                body.classList.add('dark-mode');
+                button.textContent = 'Mudar para Light Mode';
+                localStorage.setItem(THEME_KEY, 'dark');
+            } else {
+                body.classList.remove('dark-mode');
+                button.textContent = 'Mudar para Dark Mode';
+                localStorage.setItem(THEME_KEY, 'light');
+            }
+        }
+
+        function toggleTheme() {
+            const temaAtual = localStorage.getItem(THEME_KEY);
+            const novoTema = temaAtual === 'dark' ? 'light' : 'dark';
+            aplicarTema(novoTema);
+        }
+
+        function carregarTema() {
+            const temaSalvo = localStorage.getItem(THEME_KEY) || 'light';
+            aplicarTema(temaSalvo);
+        }
+
+        // --- Funções de Lógica de Cálculo e Visualização ---
+
+        const formatarMoeda = (valor) => {
+            return new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: 'BRL',
+            }).format(valor);
+        };
+
+        const formatarDataBR = (dataISO) => {
+            if (!dataISO) return '';
+            const [year, month, day] = dataISO.split('-');
+            return `${day}/${month}/${year}`;
+        }
+
+        function renderizarListaItens() {
+            const listaItensEl = document.getElementById('lista-itens');
+            listaItensEl.innerHTML = '';
+
+            itens.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+					<td>${item.descricao}</td>
+					<td style="text-align: right;">${item.quantidade}</td>
+					<td style="text-align: right;">${formatarMoeda(item.valorUnitario)}</td>
+					<td style="text-align: center;">
+						<button type="button" class="btn-remover" onclick="removerItem(${item.id})">🗑️</button>
+					</td>
+				`;
+                listaItensEl.appendChild(row);
+            });
+
+            atualizarRelatorio();
+            salvarDados();
+        }
+
+        function adicionarItem() {
+            const descricao = document.getElementById('novo-descricao').value.trim();
+            const quantidade = parseFloat(document.getElementById('novo-qtd').value);
+            const valorUnitario = parseFloat(document.getElementById('novo-valor').value);
+
+            if (descricao && quantidade > 0 && valorUnitario >= 0) {
+                itens.push({
+                    id: proximoId++,
+                    descricao: descricao,
+                    quantidade: quantidade,
+                    valorUnitario: valorUnitario
+                });
+
+                document.getElementById('novo-descricao').value = '';
+                document.getElementById('novo-qtd').value = '1';
+                document.getElementById('novo-valor').value = '0.00';
+
+                renderizarListaItens();
+            } else {
+                alert("Por favor, preencha todos os campos do item corretamente.");
+            }
+        }
+
+        function removerItem(id) {
+            itens = itens.filter(item => item.id !== id);
+            renderizarListaItens();
+        }
+
+        function atualizarRelatorio() {
+            // Pega os valores dos inputs (mesmo se vazios)
+            const tipo = document.getElementById('tipo').value;
+            const numero = document.getElementById('numero').value;
+            const dataISO = document.getElementById('data').value; // Novo
+            const cliente = document.getElementById('cliente').value;
+            const enderecoCliente = document.getElementById('enderecoCliente').value; // Novo
+            const cpfCliente = document.getElementById('cpfCliente').value; // Novo
+            const emissor = document.getElementById('emissor').value;
+            const cnpjEmissor = document.getElementById('cnpjEmissor').value; // Novo
+            const impostoPercentual = parseFloat(document.getElementById('imposto-percentual').value || 0);
+
+            let itensHTML = '';
+            let subtotal = 0;
+
+            itens.forEach(item => {
+                const totalItem = item.quantidade * item.valorUnitario;
+                subtotal += totalItem;
+
+                itensHTML += `
+					<tr>
+						<td style="color:#333; padding: 8px; border: 1px solid #ddd;">${item.descricao}</td>
+						<td style="color:#333; text-align: right; padding: 8px; border: 1px solid #ddd;">${item.quantidade}</td>
+						<td style="text-align: right; color:#333; padding: 8px; border: 1px solid #ddd;">${formatarMoeda(item.valorUnitario)}</td>
+						<td style="text-align: right; color:#333; padding: 8px; border: 1px solid #ddd;">${formatarMoeda(totalItem)}</td>
+					</tr>
+				`;
+            });
+
+            const valorImposto = subtotal * (impostoPercentual / 100);
+            const totalGeral = subtotal + valorImposto;
+
+            // Variáveis de Display com Fallback (melhora o visual da preview)
+            const tipoDisplay = tipo || DADOS_GENERICOS.tipo.toUpperCase();
+            const numeroDisplay = numero || 'NÃO INFORMADO';
+            const dataDisplay = formatarDataBR(dataISO) || 'NÃO INFORMADA'; // Novo
+            const clienteDisplay = cliente || 'NÃO INFORMADO';
+            const enderecoClienteDisplay = enderecoCliente || 'NÃO INFORMADO'; // Novo
+            const cpfClienteDisplay = cpfCliente || 'NÃO INFORMADO'; // Novo
+            const emissorDisplay = emissor || 'NÃO INFORMADO';
+            const cnpjEmissorDisplay = cnpjEmissor || 'NÃO INFORMADO'; // Novo
+            const dataAtual = new Date().toLocaleDateString('pt-BR'); // Para rodapé
+
+            const relatorioHTML = `
+				<div class="cabecalho-relatorio" style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom: 2px solid #ddd; padding-bottom: 15px;">
+					<h3 style="color:#1e88e5; font-size: 1.5em; margin: 0;">${tipoDisplay}</h3>
+					<div style="text-align: right;">
+						<p style="color:#555; margin: 3px 0;">Nº: <strong>${numeroDisplay}</strong></p>
+						<p style="color:#555; margin: 3px 0;">Data: <strong>${dataDisplay}</strong></p> </div>
+				</div>
+
+				<div class="secao dados-emissor" style="margin-top: 20px; border-bottom: 1px dashed #ccc; padding-bottom: 10px;">
+					<h4 style="color:#555; font-size: 1em; margin: 0 0 5px 0;">Emissor</h4>
+					<p style="color:#333; margin: 3px 0;"><strong>${emissorDisplay}</strong></p>
+					<p style="color:#555; margin: 3px 0;">CNPJ: ${cnpjEmissorDisplay}</p> </div>
+
+				<div class="secao dados-cliente" style="margin-top: 20px; border-bottom: 1px dashed #ccc; padding-bottom: 10px;">
+					<h4 style="color:#555; font-size: 1em; margin: 0 0 5px 0;">Cliente</h4>
+					<p style="color:#333; margin: 3px 0;"><strong>${clienteDisplay}</strong></p>
+					<p style="color:#555; margin: 3px 0;">Endereço: ${enderecoClienteDisplay}</p> <p style="color:#555; margin: 3px 0;">CPF/CNPJ: ${cpfClienteDisplay}</p> </div>
+
+				<div class="secao detalhes-itens-pdf" style="margin-top: 20px;">
+					<h4 style="color:#555; font-size: 1em; margin: 0 0 10px 0;">Detalhes dos Itens/Serviços</h4>
+					<table style="width: 100%; border-collapse: collapse;">
+						<thead>
+							<tr style="background-color: #e3f2fd;">
+								<th style="color:#333; padding: 8px; border: 1px solid #ddd;">Descrição</th>
+								<th style="color:#333; padding: 8px; border: 1px solid #ddd; text-align: right;">Qtd</th>
+								<th style="text-align: right; color:#333; padding: 8px; border: 1px solid #ddd;">Valor Unit.</th>
+								<th style="text-align: right; color:#333; padding: 8px; border: 1px solid #ddd;">Total</th>
+							</tr>
+						</thead>
+						<tbody>
+							${itens.length > 0 ? itensHTML : '<tr><td colspan="4" style="text-align: center; color: #777;">Nenhum item adicionado.</td></tr>'}
+						</tbody>
+					</table>
+				</div>
+
+				<div class="detalhes-totais" style="margin-top: 20px; text-align: right; color:#333;">
+					<p style="margin: 5px 0;">Subtotal: ${formatarMoeda(subtotal)}</p>
+					<p style="margin: 5px 0;">Imposto (${impostoPercentual}%): ${formatarMoeda(valorImposto)}</p>
+					<p class="total-final" style="font-size: 1.2em; color: #1e88e5; font-weight: bold; margin: 10px 0;">Total Geral: ${formatarMoeda(totalGeral)}</p>
+				</div>
+
+				<div class="rodape-relatorio" style="margin-top: 40px; padding-top: 10px; border-top: 1px dashed #ccc; font-size: 0.8em; text-align: center; color: #777;">
+					<p>Documento gerado em ${dataAtual}. Ferramenta de demonstração.</p>
+				</div>
+			`;
+
+            document.getElementById('relatorio-pdf').innerHTML = relatorioHTML;
+            salvarDados();
+        }
+
+        // --- Funções de Persistência e PDF ---
+
+        function salvarDados() {
+            const dados = {
+                tipo: document.getElementById('tipo').value,
+                numero: document.getElementById('numero').value,
+                data: document.getElementById('data').value, // Novo
+                cliente: document.getElementById('cliente').value,
+                enderecoCliente: document.getElementById('enderecoCliente').value, // Novo
+                cpfCliente: document.getElementById('cpfCliente').value, // Novo
+                emissor: document.getElementById('emissor').value,
+                cnpjEmissor: document.getElementById('cnpjEmissor').value, // Novo
+                imposto: document.getElementById('imposto-percentual').value,
+                itens: itens,
+                proximoId: proximoId
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(dados));
+        }
+
+        function carregarDados() {
+            carregarTema();
+
+            const dadosJSON = localStorage.getItem(STORAGE_KEY);
+            let dados;
+
+            if (dadosJSON) {
+                // Se houver dados salvos, carrega eles
+                dados = JSON.parse(dadosJSON);
+            } else {
+                // Se não houver dados salvos, usa os genéricos
+                dados = DADOS_GENERICOS;
+            }
+
+            // Carrega os dados (salvos ou genéricos)
+            document.getElementById('tipo').value = dados.tipo || "";
+            document.getElementById('numero').value = dados.numero || "";
+            document.getElementById('data').value = dados.data || ""; // Novo
+            document.getElementById('cliente').value = dados.cliente || "";
+            document.getElementById('enderecoCliente').value = dados.enderecoCliente || ""; // Novo
+            document.getElementById('cpfCliente').value = dados.cpfCliente || ""; // Novo
+            document.getElementById('emissor').value = dados.emissor || "";
+            document.getElementById('cnpjEmissor').value = dados.cnpjEmissor || ""; // Novo
+            document.getElementById('imposto-percentual').value = dados.imposto || "";
+
+            itens = dados.itens || [];
+            proximoId = dados.proximoId || 1;
+
+            if (itens.length > 0) {
+                const maxId = Math.max(...itens.map(item => item.id));
+                proximoId = maxId + 1;
+            }
+            renderizarListaItens();
+        }
+
+        function limparTudo() {
+            const confirmBox = document.getElementById('confirmacao-dinamica');
+            confirmBox.style.display = 'block'; // mostra a confirmação
+
+            document.getElementById('btn-confirmar').onclick = () => {
+                document.getElementById('formulario-nota').reset();
+                itens = []; proximoId = 1; 
+                
+                // Limpa os novos campos do form e do estado
+                document.getElementById('data').value = "";
+                document.getElementById('enderecoCliente').value = "";
+                document.getElementById('cpfCliente').value = "";
+                document.getElementById('cnpjEmissor').value = "";
+                
+                renderizarListaItens();
+                mostrarMensagem("Todos os dados foram limpos.", "info", 3000);
+                confirmBox.style.display = 'none';
+            };
+
+            document.getElementById('btn-cancelar').onclick = () => {
+                confirmBox.style.display = 'none'; // apenas fecha
+                mostrarMensagem("Ação cancelada.", "info", 2000);
+            };
+        }
+
+        // Função placeholder para 'mostrarMensagem' (não estava definida)
+        function mostrarMensagem(texto, tipo, tempo) {
+             console.log(`[${tipo.toUpperCase()}]: ${texto}`);
+        }
+
+
+        /**
+         * FUNÇÃO GERAR PDF (CORRIGIDA COM TRY/CATCH)
+         */
+        function gerarPDF() {
+            const elemento = document.getElementById('relatorio-pdf');
+
+            const opcoes = {
+                margin: 15,
+                filename: `Documento_${document.getElementById('numero').value || 'Gerado'}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, logging: false, dpi: 192, letterRendering: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            try {
+                // Tenta gerar e baixar o PDF
+                html2pdf().from(elemento).set(opcoes).save();
+            } catch (error) {
+                // Se falhar, exibe uma mensagem de erro útil.
+                console.error("ERRO AO GERAR PDF:", error);
+
+                let mensagemErro = "Ocorreu um erro ao gerar o PDF. A causa mais provável é que o navegador (Chrome/Edge) bloqueou o script por segurança ao rodar o arquivo localmente.";
+                mensagemErro += "\n\nTente as seguintes soluções:";
+                mensagemErro += "\n1. Limpe o cache do seu navegador e tente novamente.";
+                mensagemErro += "\n2. Use um navegador diferente (ex: Firefox) ou use um servidor local simples (ex: Live Server do VS Code).";
+                mensagemErro += "\n\nO erro detalhado foi logged no console (F12).";
+
+                alert(mensagemErro);
+            }
+        }
+
+        // Inicializa a aplicação ao carregar a página (carrega dados e tema)
+        document.addEventListener('DOMContentLoaded', carregarDados);
+    </script>
+
+</body>
+
+</html>
