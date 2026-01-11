@@ -1,6 +1,6 @@
 # 🧾 Gerador de Notas Fiscais em PDF (Uso Educacional)
 
-Acesse: **https://notasfiscaispdf.netlify.app/**
+Acesse: **https://notasfiscaispdf.onrender.com/**
 
 > ⚠️ **Aviso Importante**  
 > Este site é um projeto **fictício e educacional**.  
